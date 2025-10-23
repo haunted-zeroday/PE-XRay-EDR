@@ -41,9 +41,9 @@ it shows you the **evidence**, and **you make the call**.
 
 - **Launch PE-XRay.exe**
 
-- **Click "Select file..." to select an .exe or .dll.
+- **Click "Select file..." to select an .exe or .dll.**
 
-- **Click "Analyze".
+- **Click "Analyze".**
 
 Review the results:
 
