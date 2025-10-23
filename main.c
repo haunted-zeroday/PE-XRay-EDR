@@ -14,7 +14,7 @@
 #include <iupcontrols.h>
 #include <shlwapi.h>
 
-// глобал хэндлы
+// global handles
 static Ihandle* g_title_label = NULL;
 static Ihandle* g_content_zbox = NULL;
 static Ihandle* g_sidebar_list = NULL;
@@ -31,10 +31,10 @@ static Ihandle* g_sidebar_list = NULL;
 #define CARD_BORDER_COLOR   "#3a3d41"
 #define SUSPICIOUS_BG_COLOR "120 40 40"
 
-// глобальные переменные
-static WCHAR* g_currentFilePath = NULL; //храним тут путь
+// global variables
+static WCHAR* g_currentFilePath = NULL;
 
-// прототипы, чтобы не было конфликта из-за области видимости
+// prototypes to avoid scope conflicts
 int select_file_callback(Ihandle* self);
 int analyze_button_callback(Ihandle* self);
 void update_gui_with_results(const AnalysisResult* result);
@@ -46,14 +46,14 @@ static Ihandle* LoadImageFromRes(HINSTANCE hInst, int resId);
 static void destroy_all_children(Ihandle* box)
 {
     if (!box) return;
-    // удаление всех деталей, чтобы не было утечки
+    // removing all parts to avoid leakage
     while (IupGetChildCount(box) > 0) {
         Ihandle* child = IupGetChild(box, 0);
         IupDestroy(child);
     }
 }
 
-// включить интеграцию
+// enable integration
 int enable_integration_for_type(const char* fileType, const char* exePath) {
     char command[MAX_PATH + 5];
     char iconPath[MAX_PATH + 3];
@@ -86,13 +86,13 @@ int enable_integration_for_type(const char* fileType, const char* exePath) {
     return 1;
 }
 
-// выключить интеграцию
+// disable integration
 int disable_integration_for_type(const char* fileType) {
     char fullKeyPath[MAX_PATH];
     sprintf(fullKeyPath, "%s\\shell\\%s", fileType, REG_KEY_NAME);
     return (SHDeleteKeyA(HKEY_CLASSES_ROOT, fullKeyPath) == ERROR_SUCCESS);
 }
-// проверка, включена ли интеграция.
+//checking if integration is enabled.
 int is_integration_enabled_for_type(const char* fileType) {
     HKEY hKey;
     char fullKeyPath[MAX_PATH];
@@ -109,7 +109,7 @@ int is_integration_enabled_all() {
     return is_integration_enabled_for_type("exefile") && is_integration_enabled_for_type("dllfile");
 }
 
-// загрузка самих пизображений
+// uploading images
 static Ihandle* LoadImageFromRes(HINSTANCE hInst, int resId)
 {
     Ihandle* img = IupLoadImageFromResource_WIC(hInst, resId);
@@ -118,7 +118,7 @@ static Ihandle* LoadImageFromRes(HINSTANCE hInst, int resId)
     img = IupLoadImageFromResource_Temp(hInst, resId);
     if (img) return img;
 
-    // проверка, найден ли ресурс
+    // checking if the resource is found
     HRSRC hRes = FindResourceW(hInst, MAKEINTRESOURCEW(resId), L"RCDATA");
     if (!hRes) {
         char msg[128];
@@ -128,7 +128,7 @@ static Ihandle* LoadImageFromRes(HINSTANCE hInst, int resId)
     return NULL;
 }
 
-// создание ключа из регистра
+// creating a key from a registry
 int enable_integration_all() {
     char exePath[MAX_PATH];
     if (GetModuleFileNameA(NULL, exePath, MAX_PATH) == 0) {
@@ -139,14 +139,14 @@ int enable_integration_all() {
     return success_exe && success_dll;
 }
 
-// удаление ключа из регистра
+// deleting a key from the registry
 int disable_integration_all() {
     int success_exe = disable_integration_for_type("exefile");
     int success_dll = disable_integration_for_type("dllfile");
     return success_exe && success_dll;
 }
 
-// загружаем во временную папку
+// download to a temp folder
 static Ihandle* IupLoadImageFromResource_Temp(HINSTANCE hInst, int resId)
 {
     HRSRC hRes = FindResource(hInst, MAKEINTRESOURCE(resId), RT_RCDATA);
@@ -182,7 +182,7 @@ static Ihandle* IupLoadImageFromResource_Temp(HINSTANCE hInst, int resId)
     return img;
 }
 
-//загрузка изображений из ресурсов
+// loading images from resources
 static Ihandle* IupLoadImageFromResource_WIC(HINSTANCE hInst, int resId)
 {
     HRSRC hRes = NULL;
@@ -258,7 +258,7 @@ static Ihandle* IupLoadImageFromResource_WIC(HINSTANCE hInst, int resId)
     return img;
 }
 
-// колбэки
+// select file callback
 int select_file_callback(Ihandle* self) {
     WCHAR file_path_wchar[MAX_PATH] = { 0 };
     OPENFILENAMEW ofn = { 0 };
@@ -266,9 +266,9 @@ int select_file_callback(Ihandle* self) {
     ofn.hwndOwner = IupGetDialog(self) ? (HWND)IupGetAttribute(IupGetDialog(self), "HWND") : NULL;
     ofn.lpstrFile = file_path_wchar;
     ofn.nMaxFile = MAX_PATH;
-    ofn.lpstrFilter = L"Исполняемые файлы (*.exe;*.dll)\0*.exe;*.dll\0Все файлы (*.*)\0*.*\0";
+    ofn.lpstrFilter = L"Executable files (*.exe;*.dll)\0*.exe;*.dll\0All files (*.*)\0*.*\0";
     ofn.nFilterIndex = 1;
-    ofn.lpstrTitle = L"Выберите файл для анализа";
+    ofn.lpstrTitle = L"Select a file to analyze";
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
     if (GetOpenFileNameW(&ofn)) {
@@ -291,24 +291,24 @@ int select_file_callback(Ihandle* self) {
 
 int toggle_integration_cb(Ihandle* self) {
     int is_checked = IupGetInt(self, "VALUE");
-    const char* admin_msg = "\n\nВозможно, требуется запустить программу от имени Администратора.";
+    const char* admin_msg = "\n\nYou may need to run the program as Administrator.";
 
     if (is_checked) {
         if (enable_integration_all()) {
-            IupMessage("Success", "Интеграция в контекстное меню включена.");
+            IupMessage("Success", "Context menu integration is enabled.");
         } else {
             char msg[256];
-            sprintf(msg, "Не удалось включить интеграцию.%s", admin_msg);
+            sprintf(msg, "Failed to enable integration.%s", admin_msg);
             IupMessage("Error", msg);
             IupSetAttribute(self, "VALUE", "OFF");
         }
     } else {
         if (disable_integration_all()) {
-            IupMessage("Success", "Интеграция в контекстное меню отключена.");
+            IupMessage("Success", "Context menu integration is disabled.");
         } else {
             char msg[256];
-            sprintf(msg, "Не удалось отключить интеграцию.%s", admin_msg);
-            IupMessage("Ошибка!", msg);
+            sprintf(msg, "Failed to disable integration.%s", admin_msg);
+            IupMessage("Error", msg);
             IupSetAttribute(self, "VALUE", "ON");
         }
     }
@@ -317,31 +317,31 @@ int toggle_integration_cb(Ihandle* self) {
 
 int analyze_button_callback(Ihandle* self) {
     if (!g_currentFilePath || g_currentFilePath[0] == L'\0') {
-        IupMessage("Внимание", "Пожалуйста, сначала выберите файл.");
+        IupMessage("Attention", "Please select a file first.");
         return IUP_DEFAULT;
     }
 
     Ihandle* main_dialog = IupGetDialog(self);
     Ihandle* status_label = IupGetHandle("status_label");
 
-    // чистка гуишки
+    // cleaning GUI
     update_gui_with_results(NULL); 
-    if (status_label) IupSetAttribute(status_label, "TITLE", "Анализ...");
+    if (status_label) IupSetAttribute(status_label, "TITLE", "Analysis...");
     IupSetAttribute(main_dialog, "ACTIVE", "NO");
     IupFlush();
 
-    // запуск самого анализа
+    // run analysis
     static AnalysisResult result_data;
-    free_analysis_result(&result_data); // чистим от прошлого анализа
+    free_analysis_result(&result_data); // clearing away the past analysis
     memset(&result_data, 0, sizeof(AnalysisResult));
 
     if (analyze_pe_file(g_currentFilePath, &result_data)) {
         update_gui_with_results(&result_data);
-        if (status_label) IupSetAttribute(status_label, "TITLE", "Анализ завершен.");
+        if (status_label) IupSetAttribute(status_label, "TITLE", "Analysis completed.");
     } else {
         Ihandle* verdict_label = IupGetHandle("verdict_label");
-        if (verdict_label) IupSetAttribute(verdict_label, "TITLE", "Вердикт: Ошибка анализа файла!");
-        if (status_label) IupSetAttribute(status_label, "TITLE", "Ошибка.");
+        if (verdict_label) IupSetAttribute(verdict_label, "TITLE", "Verdict: File parsing error!");
+        if (status_label) IupSetAttribute(status_label, "TITLE", "Error");
     }
 
     IupSetAttribute(main_dialog, "ACTIVE", "YES");
@@ -356,17 +356,17 @@ void update_gui_with_results(const AnalysisResult* result)
     Ihandle* sections_list_vbox = IupGetHandle("sections_list_vbox");
     Ihandle* imports_tree = IupGetHandle("imports_tree");
 
-    // чиста всего ненужного
+    // clean of all unnecessary
     if (!result) {
-        if (verdict_label) IupSetAttribute(verdict_label, "TITLE", "Вердикт: ...                            ");
-        if (score_label)   IupSetAttribute(score_label, "TITLE", "Счет: ...       ");
+        if (verdict_label) IupSetAttribute(verdict_label, "TITLE", "Verdict: ...                            ");
+        if (score_label)   IupSetAttribute(score_label, "TITLE", "Score: ...       ");
         if (findings_text) IupSetAttribute(findings_text, "VALUE", "");
         
         if (sections_list_vbox) {
             destroy_all_children(sections_list_vbox);
             IupRefresh(sections_list_vbox);
         }
-        //чистка древа импорта
+        // cleaning the import tree
         if (imports_tree) {
             IupSetAttribute(imports_tree, "DELNODE", "CHILDREN");
         }
@@ -376,9 +376,9 @@ void update_gui_with_results(const AnalysisResult* result)
     }
 
 
-    // заполнение "сводный отчет"
-    if (verdict_label) IupSetfAttribute(verdict_label, "TITLE", "Вердикт: %s", result->verdict);
-    if (score_label)   IupSetfAttribute(score_label, "TITLE", "Счет: %d", result->total_score);
+    // filling out the "summary report"
+    if (verdict_label) IupSetfAttribute(verdict_label, "TITLE", "Verdict: %s", result->verdict);
+    if (score_label)   IupSetfAttribute(score_label, "TITLE", "Score: %d", result->total_score);
 
     if (findings_text) {
         char report_buffer[8192] = { 0 };
@@ -392,7 +392,7 @@ void update_gui_with_results(const AnalysisResult* result)
         IupSetStrAttribute(findings_text, "VALUE", report_buffer);
     }
 
-    // заполняем данными вкладку "Секции"
+    // fill in the "Sections" tab with data
     if (sections_list_vbox)
     {
         destroy_all_children(sections_list_vbox);
@@ -442,7 +442,7 @@ void update_gui_with_results(const AnalysisResult* result)
         if (dlg) IupRefresh(dlg);
     }
 
-    // заполнение секции "импорты"
+    // filling out the "imports" section
     if (imports_tree && result->dll_count > 0)
     {
         IupSetAttribute(imports_tree, "DELNODE", "CHILDREN");
@@ -483,12 +483,12 @@ void update_gui_with_results(const AnalysisResult* result)
 
 Ihandle* create_result_tabs()
 {
-    // начало вкладки "сводный отчет" 
-    Ihandle* verdict_label = IupLabel("Вердикт: ...");
+    // start of the "summary report" tab
+    Ihandle* verdict_label = IupLabel("Verdict: ...");
     IupSetAttribute(verdict_label, "FONT", ", Bold 14");
     IupSetAttribute(verdict_label, "FGCOLOR", TEXT_COLOR);
 
-    Ihandle* score_label = IupLabel("Счет: ...");
+    Ihandle* score_label = IupLabel("Score: ...");
     IupSetAttribute(score_label, "FGCOLOR", TEXT_COLOR);
 
     Ihandle* findings_text = IupText(NULL);
@@ -504,22 +504,22 @@ Ihandle* create_result_tabs()
     IupSetAttribute(summary_vbox, "GAP", "5");
     IupSetAttribute(summary_vbox, "MARGIN", "10x10");
 
-    // начало вкладки "секции"
+    // start of the "sections" tab
     
     const char* col_widths[] = { "120", "100", "100", "80", "60" };
 
-    // шапка таблицы для секций
-    Ihandle* header_name = IupLabel("Имя");
-    Ihandle* header_addr = IupLabel("Адрес");
-    Ihandle* header_size = IupLabel("Размер");
-    Ihandle* header_entropy = IupLabel("Энтропия");
-    Ihandle* header_flags = IupLabel("Флаги");
+    // table header for sections
+    Ihandle* header_name = IupLabel("Name");
+    Ihandle* header_addr = IupLabel("Address");
+    Ihandle* header_size = IupLabel("Size");
+    Ihandle* header_entropy = IupLabel("Entropy");
+    Ihandle* header_flags = IupLabel("Flags");
 
     Ihandle* headers_array[] = { header_name, header_addr, header_size, header_entropy, header_flags };
     for (int i = 0; i < 5; i++) {
         IupSetAttribute(headers_array[i], "FONT", ", Bold");
         IupSetAttribute(headers_array[i], "FGCOLOR", TEXT_COLOR);
-        IupSetAttribute(headers_array[i], "SIZE", col_widths[i]); // Задаем ширину
+        IupSetAttribute(headers_array[i], "SIZE", col_widths[i]);
         IupSetAttribute(headers_array[i], "ALIGNMENT", "ALEFT");
     }
 
@@ -535,7 +535,7 @@ Ihandle* create_result_tabs()
     IupSetAttribute(sections_scrollbox, "EXPAND", "YES");
     IupSetAttribute(sections_scrollbox, "BGCOLOR", CONTENT_BG_COLOR);
 
-    // сбор финальной страницы "секции"
+    // collecting the final page of the "section"
     Ihandle* sections_page = IupVbox(
         headers_hbox,
         IupLabel(NULL),
@@ -545,7 +545,7 @@ Ihandle* create_result_tabs()
     IupSetAttribute(sections_page, "MARGIN", "10x10");
     IupSetAttribute(sections_page, "GAP", "5");
         
-    // создание элементов "Импорты"
+    // creating "Imports" elements
     Ihandle* imports_tree = IupTree();
     IupSetAttribute(imports_tree, "SHOWRENAME", "NO");
     IupSetAttribute(imports_tree, "EXPAND", "YES");
@@ -556,9 +556,9 @@ Ihandle* create_result_tabs()
     Ihandle* result_tabs = IupTabs(summary_vbox, sections_page, imports_tree, NULL);
 	IupSetAttribute(result_tabs, "TABSFGCOLOR", TEXT_COLOR); 
 	IupSetAttribute(result_tabs, "TABSBGCOLOR", SIDEBAR_BG_COLOR);
-    IupSetAttribute(result_tabs, "TABTITLE0", "Сводный отчет");
-    IupSetAttribute(result_tabs, "TABTITLE1", "Секции");
-    IupSetAttribute(result_tabs, "TABTITLE2", "Импорты");
+    IupSetAttribute(result_tabs, "TABTITLE0", "Summary report");
+    IupSetAttribute(result_tabs, "TABTITLE1", "Sections");
+    IupSetAttribute(result_tabs, "TABTITLE2", "Imports");
     IupSetAttribute(result_tabs, "BGCOLOR", CARD_BG_COLOR);
     
     IupSetHandle("verdict_label", verdict_label);
@@ -570,7 +570,7 @@ Ihandle* create_result_tabs()
     return result_tabs;
 }
 
-// создает страницу для анализа
+// creates a page for analysis
 Ihandle* create_analyzer_page() {
     Ihandle* filepath_text = IupText(NULL);
     IupSetAttribute(filepath_text, "READONLY", "YES");
@@ -581,13 +581,13 @@ Ihandle* create_analyzer_page() {
     IupSetAttribute(filepath_text, "PADDING", "5x5");
     IupSetHandle("path_text", filepath_text);
 
-    Ihandle* select_file_button = IupButton("Выбрать файл...", NULL);
+    Ihandle* select_file_button = IupButton("Select file...", NULL);
     IupSetCallback(select_file_button, "ACTION", (Icallback)select_file_callback);
     IupSetAttribute(select_file_button, "FLAT", "YES");
     IupSetAttribute(select_file_button, "PADDING", "4x2");
     IupSetAttribute(select_file_button, "FGCOLOR", TEXT_COLOR);
     
-    Ihandle* analyze_button = IupButton("Анализировать", NULL);
+    Ihandle* analyze_button = IupButton("Analyze", NULL);
     IupSetCallback(analyze_button, "ACTION", (Icallback)analyze_button_callback);
     IupSetAttribute(analyze_button, "FLAT", "YES");
     IupSetAttribute(analyze_button, "PADDING", "4x2");
@@ -603,7 +603,7 @@ Ihandle* create_analyzer_page() {
     return page_vbox;
 }
 
-// для главной страницы и настроек.
+// for the main page and settings
 Ihandle* make_card(const char* title, Ihandle* content) {
     Ihandle* title_label = IupLabel(title);
     IupSetAttribute(title_label, "FONT", ", Bold 12");
@@ -630,7 +630,7 @@ Ihandle* make_card(const char* title, Ihandle* content) {
     return frame;
 }
 
-/*      колбэк для перехода в другую секцию      */
+/*      callback to navigate to another section      */
 int nav_enter_cb(Ihandle* self) {
     if (IupGetInt(self, "ACTIVE_ON")) return IUP_DEFAULT;
     IupSetAttribute(self, "BGCOLOR", SIDEBAR_ITEM_HOVER);
@@ -638,14 +638,14 @@ int nav_enter_cb(Ihandle* self) {
 }
 
 
-/*      колбэк для перехода в другую секцию      */
+/*      callback to navigate to another section      */
 int nav_leave_cb(Ihandle* self) {
     if (IupGetInt(self, "ACTIVE_ON")) return IUP_DEFAULT;
     IupSetAttribute(self, "BGCOLOR", NULL);
     return IUP_DEFAULT;
 }
 
-/*  чистка всех индикаторов */
+/*  cleaning all indicators */
 void clear_all_indicators() {
     int count = IupGetChildCount(g_sidebar_list);
     for (int i = 0; i < count; i++) {
@@ -659,7 +659,7 @@ void clear_all_indicators() {
         }
     }
 }
-/*      колбэк для перехода в другую секцию      */
+/*      callback to navigate to another section      */
 int nav_click_cb(Ihandle* self) {
     Ihandle* page = IupGetAttributeHandle(self, "TARGET_PAGE");
     const char* title = IupGetAttribute(self, "TITLE");
@@ -674,12 +674,12 @@ int nav_click_cb(Ihandle* self) {
     IupSetAttribute(self, "BGCOLOR", SIDEBAR_ITEM_HOVER);
     IupSetAttribute(self, "ACTIVE_ON", "1");
 
-    IupSetfAttribute(g_title_label, "TITLE", "Раздел: %s", title ? title : "");
+    IupSetfAttribute(g_title_label, "TITLE", "Section: %s", title ? title : "");
 
     return IUP_DEFAULT;
 }
 
-/*                         переход в другую вкладку                 */
+/*                         switch to another tab                 */
 Ihandle* make_nav_item(const char* title, const char* image, const char* page_index, Ihandle* target_page) {
     Ihandle* indicator = IupLabel(NULL);
     IupSetAttribute(indicator, "RASTERSIZE", "0x");
@@ -728,15 +728,15 @@ int main(int argc, char** argv) {
     IupSetHandle("imgExit",      LoadImageFromRes(hInst, IDR_PNG_EXIT));
     IupSetHandle("imgLogo",      LoadImageFromRes(hInst, IDR_PNG_LOGO));
     
-    Ihandle* page_home = IupLabel("Добро пожаловать в PE-XRay!\n\nВыберите раздел 'Аналитика', чтобы начать.");
+    Ihandle* page_home = IupLabel("Welcome to PE-XRay!\n\nSelect the 'Analytics' section to get started.");
     IupSetAttribute(page_home, "EXPAND", "YES");
     IupSetAttribute(page_home, "ALIGNMENT", "ACENTER");
     IupSetAttribute(page_home, "FGCOLOR", TEXT_COLOR);
 
     Ihandle* page_analyzer = create_analyzer_page();
 
-    // интеграция
-    Ihandle* integration_toggle = IupToggle("Включить интеграцию в контекстное меню (для .exe и .dll)", NULL);
+    // integration
+    Ihandle* integration_toggle = IupToggle("Enable context menu integration (for .exe and .dll)", NULL);
     IupSetCallback(integration_toggle, "ACTION", (Icallback)toggle_integration_cb);
     IupSetAttribute(integration_toggle, "FGCOLOR", TEXT_COLOR);
 
@@ -749,7 +749,7 @@ int main(int argc, char** argv) {
     IupSetAttribute(settings_content, "GAP", "10");
 
     g_content_zbox = IupZbox(page_home, page_analyzer, settings_content, NULL);
-    // левая панель
+    // left panel
     Ihandle* logo_label = IupLabel("PE-XRay Analyse");
     IupSetAttribute(logo_label, "FONT", ", Bold 11");
     IupSetAttribute(logo_label, "FGCOLOR", TEXT_COLOR);
@@ -763,11 +763,11 @@ int main(int argc, char** argv) {
     IupSetAttribute(separator_top, "SEPARATOR", "HORIZONTAL");
     IupSetAttribute(separator_top, "COLOR", BORDER_COLOR);
     
-    Ihandle* nav_home = make_nav_item("Главная", "imgHome", "0", page_home);
-    Ihandle* nav_analytics = make_nav_item("Аналитика", "imgAnalytics", "1", page_analyzer);
-    Ihandle* nav_settings = make_nav_item("Настройки", "imgSettings", "2", settings_content);
-    
-    Ihandle* nav_exit_btn = IupButton("Выход", NULL);
+    Ihandle* nav_home = make_nav_item("Home", "imgHome", "0", page_home);
+    Ihandle* nav_analytics = make_nav_item("Analytics", "imgAnalytics", "1", page_analyzer);
+    Ihandle* nav_settings = make_nav_item("Settings", "imgSettings", "2", settings_content);
+    Ihandle* nav_exit_btn = IupButton("Exit", NULL);
+
     IupSetAttribute(nav_exit_btn, "FGCOLOR", TEXT_COLOR);
     IupSetAttribute(nav_exit_btn, "IMAGE", "imgExit");
     IupSetAttribute(nav_exit_btn, "FLAT", "YES");
@@ -782,8 +782,8 @@ int main(int argc, char** argv) {
     IupSetAttribute(sidebar, "GAP", "15");
     IupSetAttribute(sidebar, "BGCOLOR", SIDEBAR_BG_COLOR);
 
-    // правая панель
-    g_title_label = IupLabel("Раздел: Главная");
+    // right panel
+    g_title_label = IupLabel("Section: Home");
     IupSetAttribute(g_title_label, "FONT", ", Bold 18");
     IupSetAttribute(g_title_label, "FGCOLOR", TEXT_COLOR);
     IupSetAttribute(g_title_label, "EXPAND", "HORIZONTAL");
@@ -807,7 +807,7 @@ int main(int argc, char** argv) {
     IupSetAttribute(dialog, "BGCOLOR", BG_COLOR);
     IupSetAttribute(dialog, "ICON", "IDI_APP_ICON");
 
-    // установка основной страницы "аналитика" если в параметры передается путь файла
+    // setting the main "analytics" page if a file path is passed in the parameters
     if (argc > 1) {
         Ihandle* analytics_button = IupGetChild(nav_analytics, 1);
         if (analytics_button) {
