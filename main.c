@@ -805,7 +805,7 @@ int main(int argc, char** argv) {
     IupSetAttribute(dialog, "TITLE", "PE-XRay");
     IupSetAttribute(dialog, "RASTERSIZE", "1280x600");
     IupSetAttribute(dialog, "BGCOLOR", BG_COLOR);
-    IupSetAttribute(dialog, "ICON", "IDI_APP_ICON");
+    IupSetAttribute(dialog, "ICON", "IDI_APP_ICON_SMALL");
 
     // setting the main "analytics" page if a file path is passed in the parameters
     if (argc > 1) {

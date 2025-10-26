@@ -4,4 +4,5 @@
 #define IDR_PNG_SETTINGS  103
 #define IDR_PNG_EXIT      104
 #define IDR_PNG_LOGO      105
-#define IDI_APP_ICON      1
+#define IDI_APP_ICON_BIG    1
+#define IDI_APP_ICON_SMALL  2
