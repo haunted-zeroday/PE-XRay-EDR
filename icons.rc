@@ -5,6 +5,5 @@ IDR_PNG_ANALYTICS RCDATA "assets/icon_analytics.png"
 IDR_PNG_SETTINGS  RCDATA "assets/icon_settings.png"
 IDR_PNG_EXIT      RCDATA "assets/exit.png"
 IDR_PNG_LOGO      RCDATA "assets/logo.png"
-
-IDI_APP_ICON_BIG      ICON   "assets/app56.ico"
-IDI_APP_ICON_SMALL      ICON   "assets/app32.ico"
+IDI_APP_ICON_BIG    ICON   "assets/app56.ico"
+IDI_APP_ICON_SMALL  ICON   "assets/app32.ico"
