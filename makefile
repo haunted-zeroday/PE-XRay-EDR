@@ -1,19 +1,22 @@
 CC = g++
+CFLAGS = -Iinclude -Icore/include -m64 -O2 -s -DNDEBUG
+LDIR = -Llib 
 
-SRCS = main.c core/pe_analyzer.c core/src/pe_x86.c core/src/pe_x64.c src/scanner.c
+CORE_SRCS = core/pe_analyzer.c core/src/pe_x86.c core/src/pe_x64.c src/addons.c
 
-TARGET = PE-XRay.exe
-
-# Определяем пути
-IDIR = -Iinclude -Icore/include
-LDIR = -Llib
-
-LIBS = -liup -liupcd -liupimglib -liupim \
+GUI_LIBS = -liup -liupcd -liupimglib -liupim \
        -lcd -lim -lz \
        -lgdi32 -lcomctl32 -lole32 -loleaut32 -luuid -lwintrust -lwindowscodecs -lshlwapi
+GUI_LDFLAGS = -mwindows -static
 
-CFLAGS = $(IDIR) -m64 -mwindows -O2 -s -DNDEBUG -ffunction-sections -fdata-sections -Wl,--gc-sections -static
+gui: main.c $(CORE_SRCS) icons.o
+	windres --target=pe-x86-64 icons.rc -o icons.o
+	$(CC) $(CFLAGS) $^ -o PE-XRay.exe $(GUI_LDFLAGS) $(LDIR) $(GUI_LIBS)
 
-$(TARGET): $(SRCS)
-	windres --target=pe-x86-64 icons.rc icons.o
-	$(CC) $(SRCS) -o $(TARGET) $(CFLAGS) $(LDIR) $(LIBS) icons.o
+CLI_LIBS = -lshlwapi -lwintrust
+CLI_LDFLAGS = -mconsole -static
+
+cli: cli_main.c $(CORE_SRCS)
+	$(CC) $(CFLAGS) $^ -o pexray-cli.exe $(CLI_LDFLAGS) $(LDIR) $(CLI_LIBS)
+
+all: gui cli
