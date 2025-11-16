@@ -28,6 +28,9 @@ VOID parse_sections_x86(PIMAGE_NT_HEADERS32 p_nt_header, LPVOID lp_base_address,
         
         current_section->virtual_address = p_section_header->VirtualAddress;
         current_section->virtual_size = p_section_header->Misc.VirtualSize;
+
+        current_section->raw_pointer = p_section_header->PointerToRawData;
+        current_section->raw_size = p_section_header->SizeOfRawData;
         
         current_section->flags[0] = (p_section_header->Characteristics & IMAGE_SCN_MEM_READ) ? 'R' : '-';
         current_section->flags[1] = (p_section_header->Characteristics & IMAGE_SCN_MEM_WRITE) ? 'W' : '-';

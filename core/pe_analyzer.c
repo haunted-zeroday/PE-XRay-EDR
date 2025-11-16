@@ -109,7 +109,7 @@ BOOL find_high_entropy_blocks(LPVOID data_sections, DWORD size_data_sections)
     
     for (DWORD offset = 0; offset + WINDOW_SIZE <= size_data_sections; offset += STEP_SIZE)
     {
-        LPVOID p_window_start = data_sections + offset;
+        LPVOID p_window_start = (BYTE*)data_sections + offset;
         FLOAT entropy = calculate_entropy(p_window_start, WINDOW_SIZE);
         if (entropy > 7.4)
         {
@@ -177,11 +177,9 @@ VOID scan_section_for_strings(LPVOID section_data, DWORD section_size, AnalysisR
                             if (strstr(temp_buffer, suspicious_strings[j]) != NULL)
                             {
                                 if (result->finding_count < MAX_FINDINGS) 
-                                {HeuristicFinding* finding = &result->findings[result->finding_count];
-                                sprintf(finding->description, "[MEDIUM] Found suspicious substring '%s'", suspicious_strings[j]);
-                                finding->score = 10;
-                                result->finding_count++;
-                                result->total_score += 10;}
+                                {
+                                    AddFinding(result, 10, "[MEDIUM] Found suspicious substring '%s'", suspicious_strings[j]);
+                                }
                                 
 
                                 break; 
@@ -240,7 +238,7 @@ VOID evaluate_threats(PIMAGE_NT_HEADERS p_nt_header, LPVOID lp_base_address, Ana
     //  section analysis
     for (int i = 0; i < result->section_count; i++) {
         SectionInfo* s = &result->sections[i];
-        
+
         // entropy rule
         if (s->entropy > ENTROPY_CRITICAL) {
             AddFinding(result, 40, "[CRITICAL] High entropy (%.2f) in section '%s'", s->entropy, s->name);
@@ -252,14 +250,14 @@ VOID evaluate_threats(PIMAGE_NT_HEADERS p_nt_header, LPVOID lp_base_address, Ana
             AddFinding(result, 25, "[MEDIUM] Suspicious entropy (%.2f) in section '%s'", s->entropy, s->name);
             s->is_suspicious = TRUE;
         }
-        
+    
         // flag rule
         if (strstr(s->flags, "W") && strstr(s->flags, "X")) {
             AddFinding(result, 40, "[CRITICAL] Dangerous permissions (W+X) on section '%s'", s->name);
             s->is_suspicious = TRUE;
         }
 
-        // правило на диске меньше чем в памяти
+        // rule: disk space is less than memory space
         if (s->raw_size == 0 && s->virtual_size > 500 * 1024) {
             AddFinding(result, 50, "[CRITICAL] Section '%s': empty on disk but reserved %u bytes in memory (possible unpack zone)", s->name, s->virtual_size);
             s->is_suspicious = TRUE;
@@ -272,6 +270,12 @@ VOID evaluate_threats(PIMAGE_NT_HEADERS p_nt_header, LPVOID lp_base_address, Ana
                 AddFinding(result, 50, "[CRITICAL] Found hidden high-entropy block in section '%s'", s->name);
                 s->is_suspicious = TRUE;
             }
+        }
+
+        // string parsing
+        if (s->raw_size != 0) {
+            BYTE* data = (BYTE*)lp_base_address + s->raw_pointer;
+            scan_section_for_strings(data, s->raw_size, result);
         }
     }
 
@@ -321,14 +325,6 @@ VOID evaluate_threats(PIMAGE_NT_HEADERS p_nt_header, LPVOID lp_base_address, Ana
     if (result->dll_count >= 0 && result->dll_count < 3) 
     {
         AddFinding(result, 20, "Anomalously low DLL count: %d (likely packed)", result->dll_count);
-    }
-
-    // string parsing
-    for (int i = 0; i < result->section_count; i++) {
-        if (strncmp(result->sections[i].name, ".rdata", 6) == 0 || strncmp(result->sections[i].name, ".data", 5) == 0) {
-             BYTE* data = (BYTE*)lp_base_address + result->sections[i].raw_pointer;
-             scan_section_for_strings(data, result->sections[i].raw_size, result);
-        }
     }
 
 
