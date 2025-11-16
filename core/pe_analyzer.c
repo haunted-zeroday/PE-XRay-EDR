@@ -350,7 +350,7 @@ VOID evaluate_threats(PIMAGE_NT_HEADERS p_nt_header, LPVOID lp_base_address, Ana
         sprintf(result->verdict, "Low risk");
     }
     else {
-        sprintf(result->verdict, "Clen");
+        sprintf(result->verdict, "Clean");
     }
     
     
