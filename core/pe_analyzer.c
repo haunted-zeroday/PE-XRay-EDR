@@ -121,6 +121,21 @@ BOOL find_high_entropy_blocks(LPVOID data_sections, DWORD size_data_sections)
     return FALSE;
 }
 
+void AddFinding(AnalysisResult* result, int score, const char* format, ...) {
+    if (result->finding_count < MAX_FINDINGS) {
+        HeuristicFinding* finding = &result->findings[result->finding_count];
+        finding->score = score;
+        result->total_score += score;
+
+        va_list args;
+        va_start(args, format);
+        vsnprintf(finding->description, sizeof(finding->description), format, args);
+        va_end(args);
+
+        result->finding_count++;
+    }
+}
+
 VOID scan_section_for_strings(LPVOID section_data, DWORD section_size, AnalysisResult* result)
 {
     size_t num_suspicious = sizeof(suspicious_strings) / sizeof(suspicious_strings[0]);
@@ -199,21 +214,6 @@ VOID scan_section_for_strings(LPVOID section_data, DWORD section_size, AnalysisR
             }
         }
         is_reading_string = FALSE;
-    }
-}
-
-void AddFinding(AnalysisResult* result, int score, const char* format, ...) {
-    if (result->finding_count < MAX_FINDINGS) {
-        HeuristicFinding* finding = &result->findings[result->finding_count];
-        finding->score = score;
-        result->total_score += score;
-
-        va_list args;
-        va_start(args, format);
-        vsnprintf(finding->description, sizeof(finding->description), format, args);
-        va_end(args);
-
-        result->finding_count++;
     }
 }
 
