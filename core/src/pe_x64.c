@@ -31,7 +31,7 @@ VOID parse_sections_x64(PIMAGE_NT_HEADERS64 p_nt_header, LPVOID lp_base_address,
         
         current_section->flags[0] = (p_section_header->Characteristics & IMAGE_SCN_MEM_READ) ? 'R' : '-';
         current_section->flags[1] = (p_section_header->Characteristics & IMAGE_SCN_MEM_WRITE) ? 'W' : '-';
-        current_section->flags[2] = (p_section_header->Characteristics & IMAGE_SCN_MEM_EXECUTE) ? 'E' : '-';
+        current_section->flags[2] = (p_section_header->Characteristics & IMAGE_SCN_MEM_EXECUTE) ? 'X' : '-';
         current_section->flags[3] = '\0';
 
         if (p_section_header->PointerToRawData + p_section_header->SizeOfRawData > file_size || p_section_header->SizeOfRawData == 0) {
