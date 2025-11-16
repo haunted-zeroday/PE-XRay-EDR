@@ -191,11 +191,8 @@ VOID scan_section_for_strings(LPVOID section_data, DWORD section_size, AnalysisR
             if (strstr(temp_buffer, suspicious_strings[j]) != NULL)
             {
                 if (result->finding_count < MAX_FINDINGS) 
-                {HeuristicFinding* finding = &result->findings[result->finding_count];
-                sprintf(finding->description, "[MEDIUM] Found suspicious substring '%s'", suspicious_strings[j]);
-                finding->score = 10;
-                result->finding_count++;
-                result->total_score += 10;
+                {
+                    AddFinding(result, 10, "[MEDIUM] Found suspicious substring '%s'", suspicious_strings[j]);
                 }
 
                 break; 
@@ -251,21 +248,20 @@ VOID evaluate_threats(PIMAGE_NT_HEADERS p_nt_header, LPVOID lp_base_address, Ana
         } else if (s->entropy > ENTROPY_HIGH) {
             AddFinding(result, 25, "[HIGH] Suspicious entropy (%.2f) in section '%s'", s->entropy, s->name);
             s->is_suspicious = TRUE;
-        } else if (s->entropy > ENTROPY_MEDIUM)
-        {
+        } else if (s->entropy > ENTROPY_MEDIUM) {
             AddFinding(result, 25, "[MEDIUM] Suspicious entropy (%.2f) in section '%s'", s->entropy, s->name);
             s->is_suspicious = TRUE;
         }
         
         // flag rule
-        if (strstr(s->flags, "W") && strstr(s->flags, "E")) {
-            AddFinding(result, 40, "[CRITICAL] Dangerous permissions (W+E) on section '%s'", s->name);
+        if (strstr(s->flags, "W") && strstr(s->flags, "X")) {
+            AddFinding(result, 40, "[CRITICAL] Dangerous permissions (W+X) on section '%s'", s->name);
             s->is_suspicious = TRUE;
         }
 
-        // правило на диске меньше меньше чем в памяти
+        // правило на диске меньше чем в памяти
         if (s->raw_size == 0 && s->virtual_size > 500 * 1024) {
-            AddFinding(result, 50, "[CRITICAL] Section '%s' has 0 size on disk but large in memory", s->name);
+            AddFinding(result, 50, "[CRITICAL] Section '%s': empty on disk but reserved %u bytes in memory (possible unpack zone)", s->name, s->virtual_size);
             s->is_suspicious = TRUE;
         }
 
@@ -295,7 +291,7 @@ VOID evaluate_threats(PIMAGE_NT_HEADERS p_nt_header, LPVOID lp_base_address, Ana
     if (!entry_point_found) {
         AddFinding(result, 50, "[CRITICAL] Entry point is outside of any section");
     } else {
-        if (!strstr(entry_point_section->flags, "E")) {
+        if (!strstr(entry_point_section->flags, "X")) {
             AddFinding(result, 40, "[HIGH] Entry point is in a non-executable section ('%s')", entry_point_section->name);
         }
         if (strncmp(entry_point_section->name, ".text", 5) != 0) {
@@ -350,7 +346,7 @@ VOID evaluate_threats(PIMAGE_NT_HEADERS p_nt_header, LPVOID lp_base_address, Ana
         sprintf(result->verdict, "Low risk");
     }
     else {
-        sprintf(result->verdict, "Clen");
+        sprintf(result->verdict, "Clean");
     }
     
     
@@ -409,6 +405,7 @@ BOOL analyze_pe_file(WCHAR* file_path, AnalysisResult* result)
     h_file = CreateFileW(file_path, GENERIC_READ, 0, NULL, 3, FILE_ATTRIBUTE_NORMAL, NULL);
     if (h_file == INVALID_HANDLE_VALUE)
     {
+        sprintf(result->verdict, "Failed to open file");
         return FALSE;
     }
 
@@ -440,6 +437,7 @@ BOOL analyze_pe_file(WCHAR* file_path, AnalysisResult* result)
     HANDLE h_map_object = CreateFileMappingW(h_file, NULL, PAGE_READONLY, 0, 0, NULL);
     if (h_map_object == NULL)
     {
+        sprintf(result->verdict, "Failed to create file mapping");
         CloseHandle(h_map_object);
         return FALSE;
     }
@@ -447,6 +445,7 @@ BOOL analyze_pe_file(WCHAR* file_path, AnalysisResult* result)
     LPVOID lp_base_address = MapViewOfFile(h_map_object, FILE_MAP_READ, 0, 0, 0); //we get the entry address through mapping
     if(lp_base_address == NULL)
     {
+        sprintf(result->verdict, "Failed to get base address");
         CloseHandle(h_map_object);
         CloseHandle(h_file);
         return FALSE;
@@ -456,6 +455,7 @@ BOOL analyze_pe_file(WCHAR* file_path, AnalysisResult* result)
 
     if (p_dos_header->e_magic != IMAGE_DOS_SIGNATURE)
     {
+        sprintf(result->verdict, "Failed to get DOS header");
         UnmapViewOfFile(lp_base_address);
         CloseHandle(h_map_object);
         CloseHandle(h_file);
@@ -471,6 +471,7 @@ BOOL analyze_pe_file(WCHAR* file_path, AnalysisResult* result)
     PIMAGE_NT_HEADERS p_nt_header = (PIMAGE_NT_HEADERS)((BYTE*)lp_base_address + p_dos_header->e_lfanew); // shift to PIMAGE_NT_HEADERS
     if (p_nt_header->Signature != IMAGE_NT_SIGNATURE)
     {
+        sprintf(result->verdict, "Failed to get NT headers");
         UnmapViewOfFile(lp_base_address);
         CloseHandle(h_map_object);
         CloseHandle(h_file);
@@ -507,6 +508,7 @@ BOOL analyze_pe_file(WCHAR* file_path, AnalysisResult* result)
     }
     else
     {
+        sprintf(result->verdict, "File is ARM64");
         return FALSE;
     }
 
