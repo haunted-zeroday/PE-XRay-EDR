@@ -106,6 +106,9 @@ VOID parse_sections_x86(PIMAGE_NT_HEADERS32 p_nt_header, LPVOID lp_base_address,
 BOOL parse_imports_x86(PIMAGE_NT_HEADERS32 p_nt_header, LPVOID lp_base_address, AnalysisResult* result, LONGLONG file_size, const ApiRule* dangerous_functions, size_t num_dangerous_functions);
 
 static const char* suspicious_strings[] = {
+    "\\Run",
+    "\\RunOnce",
+    "\\Winlogon",
     "powershell -enc",
     "powershell -nop",
     "powershell -w hidden",
@@ -142,6 +145,14 @@ static const ApiRule dangerous_api_rules[] = {
     { "QueueUserAPC",               25, "CRITICAL" },
     { "VirtualProtectEx",           25, "CRITICAL" },
     { "SetThreadContext",           30, "CRITICAL" },
+    { "NtRaiseHardError",           40, "CRITICAL" },
+    { "RtlAdjustPrivilege",         20, "CRITICAL" },
+    { "AdjustTokenPrivileges",      20, "CRITICAL" },
+    { "CreateProcessAsUserA",       25, "CRITICAL" },
+    { "CreateProcessAsUserW",       25, "CRITICAL" },
+    { "ImpersonateLoggedOnUser",    20, "CRITICAL" },
+    { "NtAllocateVirtualMemory",    15, "CRITICAL" },
+    { "NtProtectVirtualMemory",     15, "CRITICAL" },
     
     // HIGH
     { "LoadLibraryA",               15, "HIGH" },
