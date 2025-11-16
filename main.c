@@ -264,9 +264,18 @@ int analyze_button_callback(Ihandle* self) {
         update_gui_with_results(&result_data);
         if (status_label) IupSetAttribute(status_label, "TITLE", "Analysis completed.");
     } else {
-        Ihandle* verdict_label = IupGetHandle("verdict_label");
-        if (verdict_label) IupSetAttribute(verdict_label, "TITLE", "Verdict: File parsing error!");
-        if (status_label) IupSetAttribute(status_label, "TITLE", "Error");
+        if(!result_data.verdict)
+        {
+            Ihandle* verdict_label = IupGetHandle("verdict_label");
+            if (verdict_label) IupSetAttribute(verdict_label, "TITLE", "Verdict: File parsing error!");
+            if (status_label) IupSetAttribute(status_label, "TITLE", "Error");
+        }
+        else
+        {
+            Ihandle* verdict_label = IupGetHandle("verdict_label");
+            if (verdict_label) IupSetAttribute(verdict_label, "TITLE", result_data.verdict);
+        }
+        
     }
 
     IupSetAttribute(main_dialog, "ACTIVE", "YES");
