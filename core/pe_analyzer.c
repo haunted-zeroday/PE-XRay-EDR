@@ -191,11 +191,12 @@ VOID scan_section_for_strings(LPVOID section_data, DWORD section_size, AnalysisR
             if (strstr(temp_buffer, suspicious_strings[j]) != NULL)
             {
                 if (result->finding_count < MAX_FINDINGS) 
-                {HeuristicFinding* finding = &result->findings[result->finding_count];
-                sprintf(finding->description, "[MEDIUM] Found suspicious substring '%s'", suspicious_strings[j]);
-                finding->score = 10;
-                result->finding_count++;
-                result->total_score += 10;
+                {
+                    HeuristicFinding* finding = &result->findings[result->finding_count];
+                    sprintf(finding->description, "[MEDIUM] Found suspicious substring '%s'", suspicious_strings[j]);
+                    finding->score = 10;
+                    result->finding_count++;
+                    result->total_score += 10;
                 }
 
                 break; 
@@ -251,15 +252,14 @@ VOID evaluate_threats(PIMAGE_NT_HEADERS p_nt_header, LPVOID lp_base_address, Ana
         } else if (s->entropy > ENTROPY_HIGH) {
             AddFinding(result, 25, "[HIGH] Suspicious entropy (%.2f) in section '%s'", s->entropy, s->name);
             s->is_suspicious = TRUE;
-        } else if (s->entropy > ENTROPY_MEDIUM)
-        {
+        } else if (s->entropy > ENTROPY_MEDIUM) {
             AddFinding(result, 25, "[MEDIUM] Suspicious entropy (%.2f) in section '%s'", s->entropy, s->name);
             s->is_suspicious = TRUE;
         }
         
         // flag rule
-        if (strstr(s->flags, "W") && strstr(s->flags, "E")) {
-            AddFinding(result, 40, "[CRITICAL] Dangerous permissions (W+E) on section '%s'", s->name);
+        if (strstr(s->flags, "W") && strstr(s->flags, "X")) {
+            AddFinding(result, 40, "[CRITICAL] Dangerous permissions (W+X) on section '%s'", s->name);
             s->is_suspicious = TRUE;
         }
 
@@ -295,7 +295,7 @@ VOID evaluate_threats(PIMAGE_NT_HEADERS p_nt_header, LPVOID lp_base_address, Ana
     if (!entry_point_found) {
         AddFinding(result, 50, "[CRITICAL] Entry point is outside of any section");
     } else {
-        if (!strstr(entry_point_section->flags, "E")) {
+        if (!strstr(entry_point_section->flags, "X")) {
             AddFinding(result, 40, "[HIGH] Entry point is in a non-executable section ('%s')", entry_point_section->name);
         }
         if (strncmp(entry_point_section->name, ".text", 5) != 0) {
