@@ -124,6 +124,7 @@ int main(int argc, char** argv) {
 
     free(filePathWchar);
     free_analysis_result(&result_data);
-
+    system("pause");
+    
     return 0;
 }
