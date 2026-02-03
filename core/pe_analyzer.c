@@ -305,8 +305,6 @@ VOID evaluate_threats(PIMAGE_NT_HEADERS p_nt_header, LPVOID lp_base_address, Ana
     // import analysis
     for (int i = 0; i < result->dll_count; i++) {
         for (int j = 0; j < result->dlls[i].function_count; j++) {
-
-            
             if (result->dlls[i].functions[j].is_suspicious) 
             {
                 const char* func_name = result->dlls[i].functions[j].name;
