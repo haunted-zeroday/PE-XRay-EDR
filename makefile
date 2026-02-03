@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Iinclude -Icore/include -m64 -O2 -s -DNDEBUG
+CFLAGS = -Iinclude -Icore/include -m64 -O2 -s -DNDEBUG -DSTRSAFE_NO_DEPRECATE -D__USE_MINGW_ANSI_STDIO=1
 LDIR = -Llib 
 
 CORE_SRCS = core/pe_analyzer.c core/src/pe_x86.c core/src/pe_x64.c src/addons.c
@@ -17,6 +17,6 @@ CLI_LIBS = -lshlwapi -lwintrust
 CLI_LDFLAGS = -mconsole -static
 
 cli: cli_main.c $(CORE_SRCS)
-	$(CC) $(CFLAGS) $^ -o pexray-cli.exe $(CLI_LDFLAGS) $(LDIR) $(CLI_LIBS)
+	$(CC) $(CFLAGS) $^ -o pexray-cli.exe $(CLI_LDFLAGS) $(LDIR) $(CLI_LIBS) -municode
 
 all: gui cli
