@@ -746,8 +746,13 @@ int main(int argc, char** argv) {
     IupSetAttribute(dialog, "BGCOLOR", BG_COLOR);
     IupSetAttribute(dialog, "ICON", "IDI_APP_ICON_SMALL");
 
+
+    int nArgs = 0;
+    LPWSTR *szArgList = CommandLineToArgvW(GetCommandLineW(), &nArgs);
+    
+
     // setting the main "analytics" page if a file path is passed in the parameters
-    if (argc > 1) {
+    if (nArgs > 1) {
         Ihandle* analytics_button = IupGetChild(nav_analytics, 1);
         if (analytics_button) {
             nav_click_cb(analytics_button);
@@ -761,17 +766,15 @@ int main(int argc, char** argv) {
 
     IupShowXY(dialog, IUP_CENTER, IUP_CENTER);
 
-    if (argc > 1) {
-        WCHAR* path_wchar = ConvertUtf8ToWchar(argv[1]);
-        if (path_wchar) {
-            if (g_currentFilePath) free(g_currentFilePath);
-            g_currentFilePath = _wcsdup(path_wchar);
-            
-            Ihandle* path_text = IupGetHandle("path_text");
-            if (path_text) {
-                IupSetStrAttribute(path_text, "VALUE", argv[1]);
-            }
-            free(path_wchar);
+    if (nArgs > 1 & szArgList != NULL) {
+        
+        if (g_currentFilePath) free(g_currentFilePath);
+        g_currentFilePath = _wcsdup(szArgList[1]);
+        
+        char *utf8_path = ConvertWcharToUtf8(szArgList[1]);
+        Ihandle* path_text = IupGetHandle("path_text");
+        if (path_text) {
+            IupSetStrAttribute(path_text, "VALUE", utf8_path);
         }
 
         Ihandle* analytics_button = IupGetChild(nav_analytics, 1);
